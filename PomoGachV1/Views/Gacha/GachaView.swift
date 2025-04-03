@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct GachaView: View {
-    // An array of test items using your sprite names
-    let testItems = [
+    @EnvironmentObject var gameState: GameState
+
+    let possibleItems = [
         GachaItem(name: "Fan", spriteName: "spriteFan"),
         GachaItem(name: "Journal", spriteName: "spriteJournal"),
         GachaItem(name: "Pot", spriteName: "spritePot")
@@ -17,18 +18,30 @@ struct GachaView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            Text("Points: \(gameState.points)")
+                .font(.title2)
+            
+            Button("Roll (Cost: 1 Point)") {
+                rollForItem()
+            }
+            .padding()
+            .background(gameState.points > 0 ? Color.orange : Color.gray)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+            .disabled(gameState.points <= 0)
+            
             Text("Gacha Test")
                 .font(.largeTitle)
             
+            // Display the current inventory from GameState
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 40) {
-                    ForEach(testItems) { item in
+                    ForEach(gameState.inventory) { item in
                         VStack {
-                            Image(item.spriteName)  // Must match asset catalog name exactly
+                            Image(item.spriteName)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 80, height: 80)
-                            
                             Text(item.name)
                                 .font(.headline)
                         }
@@ -36,13 +49,23 @@ struct GachaView: View {
                 }
                 .padding()
             }
+            
+            Spacer()
         }
+        .padding()
         .navigationTitle("Gacha")
+    }
+    
+    private func rollForItem() {
+        if let newItem = possibleItems.randomElement() {
+            gameState.rollForItem(newItem)
+        }
     }
 }
 
 struct GachaView_Previews: PreviewProvider {
     static var previews: some View {
         GachaView()
+            .environmentObject(GameState())
     }
 }
