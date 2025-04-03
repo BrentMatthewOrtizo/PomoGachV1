@@ -37,18 +37,6 @@ struct HomeView: View {
     }
 }
 
-struct GachaView: View {
-    var body: some View {
-        VStack {
-            Text("Gacha Screen")
-                .font(.largeTitle)
-                .padding()
-            // TODO: Add gacha roll functionality here.
-        }
-        .navigationTitle("Gacha")
-    }
-}
-
 struct EnvironmentView: View {
     var body: some View {
         VStack {

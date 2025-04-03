@@ -12,3 +12,5 @@ struct GachaItem: Identifiable {
     let name: String
     let spriteName: String
 }
+
+
