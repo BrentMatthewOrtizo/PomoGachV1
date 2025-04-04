@@ -23,3 +23,21 @@ class GameState: ObservableObject {
         points += amount
     }
 }
+
+extension GameState {
+    /// Computes a grouped view of the inventory,
+    /// returning an array of tuples with each unique GachaItem and its count.
+    var groupedInventory: [(item: GachaItem, count: Int)] {
+        var dict: [String: (GachaItem, Int)] = [:]
+        
+        for gachaItem in inventory {
+            if let (existingItem, count) = dict[gachaItem.spriteName] {
+                dict[gachaItem.spriteName] = (existingItem, count + 1)
+            } else {
+                dict[gachaItem.spriteName] = (gachaItem, 1)
+            }
+        }
+        
+        return Array(dict.values)
+    }
+}
