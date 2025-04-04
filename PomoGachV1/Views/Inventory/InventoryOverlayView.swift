@@ -1,24 +1,31 @@
 //
-//  InventoryView.swift
+//  InventoryOverlayView.swift
 //  PomoGachV1
 //
-//  Created by Brent Matthew Ortizo on 4/3/25.
+//  Created by Brent Matthew Ortizo on 4/4/25.
 //
 
 import SwiftUI
 
-struct InventoryView: View {
+struct InventoryOverlayView: View {
+    @Binding var showOverlay: Bool
     @EnvironmentObject var gameState: GameState
-    @Environment(\.presentationMode) var presentationMode
     
-    let columns: [GridItem] = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    // Define a 3-column grid layout
+    let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 3)
     
     var body: some View {
-        NavigationView {
+        VStack {
+            HStack {
+                Text("Inventory")
+                    .font(.headline)
+                Spacer()
+                Button("Close") {
+                    showOverlay = false
+                }
+            }
+            .padding()
+            
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
                     ForEach(gameState.groupedInventory, id: \.item.id) { entry in
@@ -32,7 +39,7 @@ struct InventoryView: View {
                                     .font(.headline)
                                     .padding(.top, 5)
                             }
-                            // Display the duplicate count in the bottom-right corner
+                            // Display duplicate count
                             Text("x\(entry.count)")
                                 .font(.caption)
                                 .padding(4)
@@ -41,25 +48,22 @@ struct InventoryView: View {
                                 .cornerRadius(4)
                                 .offset(x: -5, y: -5)
                         }
+                        .onDrag {
+                            // Encode as "name:spriteName"
+                            let dragString = "\(entry.item.name):\(entry.item.spriteName)"
+                            return NSItemProvider(object: dragString as NSString)
+                        }
                     }
                 }
                 .padding()
-            }
-            .navigationTitle("Inventory")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
             }
         }
     }
 }
 
-struct InventoryView_Previews: PreviewProvider {
+struct InventoryOverlayView_Previews: PreviewProvider {
     static var previews: some View {
-        InventoryView()
+        InventoryOverlayView(showOverlay: .constant(true))
             .environmentObject(GameState())
     }
 }

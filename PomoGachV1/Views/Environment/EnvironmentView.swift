@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// Model representing an item that has been placed in the environment
+// Model representing an item placed in the environment
 struct PlacedItem: Identifiable {
     let id = UUID()
     let item: GachaItem
@@ -17,14 +17,18 @@ struct PlacedItem: Identifiable {
 struct EnvironmentView: View {
     @EnvironmentObject var gameState: GameState
     @State private var placedItems: [PlacedItem] = []
+    
+    // Toggle for showing the inventory overlay
+    @State private var showInventoryOverlay: Bool = false
 
     var body: some View {
         ZStack {
-            // Background canvas for decoration
+            // Background canvas that accepts drops
             Color(.systemGray6)
                 .ignoresSafeArea()
+                .onDrop(of: ["public.text"], isTargeted: nil, perform: handleDrop(providers:location:))
             
-            // Display each placed item; these can be repositioned via drag gestures
+            // Display each placed item; each can be repositioned with drag gestures
             ForEach(placedItems) { placedItem in
                 Image(placedItem.item.spriteName)
                     .resizable()
@@ -40,40 +44,64 @@ struct EnvironmentView: View {
                     )
             }
             
-            // Instruction overlay at the bottom
+            // Inventory overlay toggle button
             VStack {
                 Spacer()
-                Text("Drag items to decorate your environment")
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        showInventoryOverlay.toggle()
+                    }) {
+                        Text("Inventory")
+                            .font(.headline)
+                            .padding()
+                            .background(Color.blue.opacity(0.7))
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
                     .padding()
-                    .background(Color.white.opacity(0.8))
-                    .cornerRadius(8)
-                    .padding(.bottom, 30)
+                }
+            }
+            
+            // Inventory overlay popup for drag source
+            if showInventoryOverlay {
+                InventoryOverlayView(showOverlay: $showInventoryOverlay)
+                    .environmentObject(gameState)
+                    .frame(width: 300, height: 400)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
             }
         }
         .navigationTitle("Environment")
-        .toolbar {
-            // Test button to add a new item at the center of the screen
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Add Test Item") {
-                    addTestItem()
-                }
-            }
+        .onAppear {
+            // Later: Load persisted placedItems if needed.
         }
     }
     
-    // For testing: adds a random item from the possible sprites at the screen center.
-    func addTestItem() {
-        let possibleItems = [
-            GachaItem(name: "Fan", spriteName: "spriteFan"),
-            GachaItem(name: "Journal", spriteName: "spriteJournal"),
-            GachaItem(name: "Pot", spriteName: "spritePot")
-        ]
-        if let randomItem = possibleItems.randomElement() {
-            // Add the new item at the center of the screen
-            let center = CGPoint(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY)
-            let newPlacedItem = PlacedItem(item: randomItem, position: center)
-            placedItems.append(newPlacedItem)
+    // onDrop handler: Loads a dragged string (expected format "name:spriteName") and creates a PlacedItem at the drop location.
+    func handleDrop(providers: [NSItemProvider], location: CGPoint) -> Bool {
+        for provider in providers {
+            if provider.canLoadObject(ofClass: NSString.self) {
+                provider.loadObject(ofClass: NSString.self) { (object, error) in
+                    if let str = object as? String {
+                        let components = str.split(separator: ":")
+                        if components.count == 2 {
+                            let name = String(components[0])
+                            let spriteName = String(components[1])
+                            let newItem = GachaItem(name: name, spriteName: spriteName)
+                            let newPlacedItem = PlacedItem(item: newItem, position: location)
+                            DispatchQueue.main.async {
+                                placedItems.append(newPlacedItem)
+                                // Later: Persist placedItems here.
+                            }
+                        }
+                    }
+                }
+                return true
+            }
         }
+        return false
     }
 }
 
