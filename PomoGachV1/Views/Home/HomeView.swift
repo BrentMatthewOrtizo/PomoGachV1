@@ -37,18 +37,6 @@ struct HomeView: View {
     }
 }
 
-struct EnvironmentView: View {
-    var body: some View {
-        VStack {
-            Text("Environment Screen")
-                .font(.largeTitle)
-                .padding()
-            // TODO: Add environment decoration functionality here.
-        }
-        .navigationTitle("Environment")
-    }
-}
-
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
