@@ -6,12 +6,15 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct InventoryOverlayView: View {
     @Binding var showOverlay: Bool
     @EnvironmentObject var gameState: GameState
-    
-    // Define a 3-column grid layout
+    // When an item is tapped, call onSelect to notify the parent view.
+    var onSelect: (GachaItem) -> Void
+
+    // 3-column grid layout
     let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 3)
     
     var body: some View {
@@ -39,7 +42,7 @@ struct InventoryOverlayView: View {
                                     .font(.headline)
                                     .padding(.top, 5)
                             }
-                            // Display duplicate count
+                            // Duplicate counter in bottom-right
                             Text("x\(entry.count)")
                                 .font(.caption)
                                 .padding(4)
@@ -48,22 +51,26 @@ struct InventoryOverlayView: View {
                                 .cornerRadius(4)
                                 .offset(x: -5, y: -5)
                         }
-                        .onDrag {
-                            // Encode as "name:spriteName"
-                            let dragString = "\(entry.item.name):\(entry.item.spriteName)"
-                            return NSItemProvider(object: dragString as NSString)
+                        .onTapGesture {
+                            // When tapped, send the item back and dismiss the overlay.
+                            onSelect(entry.item)
+                            showOverlay = false
                         }
                     }
                 }
                 .padding()
             }
         }
+        .frame(width: 250, height: 350)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(radius: 10)
     }
 }
 
 struct InventoryOverlayView_Previews: PreviewProvider {
     static var previews: some View {
-        InventoryOverlayView(showOverlay: .constant(true))
+        InventoryOverlayView(showOverlay: .constant(true), onSelect: { _ in })
             .environmentObject(GameState())
     }
 }

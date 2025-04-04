@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// Model representing an item placed in the environment
+// Model representing an item placed in the environment.
 struct PlacedItem: Identifiable {
     let id = UUID()
     let item: GachaItem
@@ -18,17 +18,36 @@ struct EnvironmentView: View {
     @EnvironmentObject var gameState: GameState
     @State private var placedItems: [PlacedItem] = []
     
-    // Toggle for showing the inventory overlay
+    // Controls whether the inventory overlay is shown.
     @State private var showInventoryOverlay: Bool = false
+    // Holds the currently selected inventory item (if any).
+    @State private var selectedInventoryItem: GachaItem? = nil
 
     var body: some View {
         ZStack {
-            // Background canvas that accepts drops
+            // The background canvas.
             Color(.systemGray6)
                 .ignoresSafeArea()
-                .onDrop(of: ["public.text"], isTargeted: nil, perform: handleDrop(providers:location:))
+                // Overlay a clear layer that captures tap gestures for placement.
+                .overlay(
+                    GeometryReader { geo in
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onEnded { value in
+                                        if let selected = selectedInventoryItem {
+                                            // Place the selected item at the tapped location.
+                                            let location = value.location
+                                            placedItems.append(PlacedItem(item: selected, position: location))
+                                            selectedInventoryItem = nil
+                                        }
+                                    }
+                            )
+                    }
+                )
             
-            // Display each placed item; each can be repositioned with drag gestures
+            // Show each placed item; each is draggable.
             ForEach(placedItems) { placedItem in
                 Image(placedItem.item.spriteName)
                     .resizable()
@@ -44,7 +63,7 @@ struct EnvironmentView: View {
                     )
             }
             
-            // Inventory overlay toggle button
+            // Inventory toggle button.
             VStack {
                 Spacer()
                 HStack {
@@ -63,45 +82,18 @@ struct EnvironmentView: View {
                 }
             }
             
-            // Inventory overlay popup for drag source
+            // Inventory overlay popup.
             if showInventoryOverlay {
-                InventoryOverlayView(showOverlay: $showInventoryOverlay)
-                    .environmentObject(gameState)
-                    .frame(width: 300, height: 400)
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .shadow(radius: 10)
+                InventoryOverlayView(showOverlay: $showInventoryOverlay, onSelect: { selectedItem in
+                    // When an item is selected from the inventory, store it.
+                    selectedInventoryItem = selectedItem
+                })
+                .environmentObject(gameState)
+                .frame(width: 250, height: 350)
+                .transition(.move(edge: .bottom))
             }
         }
         .navigationTitle("Environment")
-        .onAppear {
-            // Later: Load persisted placedItems if needed.
-        }
-    }
-    
-    // onDrop handler: Loads a dragged string (expected format "name:spriteName") and creates a PlacedItem at the drop location.
-    func handleDrop(providers: [NSItemProvider], location: CGPoint) -> Bool {
-        for provider in providers {
-            if provider.canLoadObject(ofClass: NSString.self) {
-                provider.loadObject(ofClass: NSString.self) { (object, error) in
-                    if let str = object as? String {
-                        let components = str.split(separator: ":")
-                        if components.count == 2 {
-                            let name = String(components[0])
-                            let spriteName = String(components[1])
-                            let newItem = GachaItem(name: name, spriteName: spriteName)
-                            let newPlacedItem = PlacedItem(item: newItem, position: location)
-                            DispatchQueue.main.async {
-                                placedItems.append(newPlacedItem)
-                                // Later: Persist placedItems here.
-                            }
-                        }
-                    }
-                }
-                return true
-            }
-        }
-        return false
     }
 }
 
